@@ -11,3 +11,11 @@ OUTPUT_DIM = 2 * 4
 
 LEARNING_RATE = 1e-3
 SEED = 1
+
+# -------------- #
+
+TOTAL_USERS = 5
+USER_EMB_DIM = 3
+
+TOTAL_ITEMS = 4
+ITEM_EMB_DIM = 2

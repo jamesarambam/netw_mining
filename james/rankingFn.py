@@ -15,11 +15,12 @@ from pprint import pprint
 import time
 import torch
 from torch.autograd import Variable
-from parameters import INPUT_DIM, OUTPUT_DIM, HIDDEN_DIM, LEARNING_RATE
+from parameters import INPUT_DIM, OUTPUT_DIM, HIDDEN_DIM, LEARNING_RATE, SEED
 
 
 # =============================== Variables ================================== #
 
+torch.manual_seed(SEED)
 
 
 # ============================================================================ #
