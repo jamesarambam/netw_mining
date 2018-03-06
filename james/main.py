@@ -27,10 +27,10 @@ def main():
     data = syntheticData()
     print data.userEmbMat
     print data.itemEmbMat
-    print data.RatingMat
 
 
-
+    pprint(data.trainData)
+    pprint(data.testData)
 
     exit()
 
