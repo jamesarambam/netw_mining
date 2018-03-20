@@ -8,6 +8,8 @@ import torch
 
 import torch.optim as optim
 
+import torch.nn.functional as F
+
 from torch.autograd import Variable
 import pdb
 from spotlight.helpers import _repr_model
@@ -80,7 +82,7 @@ class ImplicitFactorizationModel(object):
                  loss='bce',
                  embedding_dim=32,
                  n_iter=10,
-                 batch_size=256,
+                 batch_size=5,
                  l2=0.0,
                  learning_rate=1e-2,
                  optimizer_func=None,
@@ -234,23 +236,21 @@ class ImplicitFactorizationModel(object):
                 pos_item = Variable(batch_item)
                 neg_item = self._get_negative_items(user_var)
 
-                tmpData = self._rankDataPrep(user_var, pos_item, neg_item)
-
-                exit()
-
+                x, target = self._rankDataPrepSwapping(user_var, pos_item, neg_item)
+                pred_prob = self._net(x)
+                self._optimizer.zero_grad()
+                loss = self.bceLoss(pred_prob, target)
+                # loss = self._loss_func(pred_prob, target)
+                '''
                 if random > 0.5:
                     pred = self._net(user_var, pos_item, neg_item)
                 else:
                     pred = self._net(user_var, neg_item, pos_item)
-
-                '''
                 pred = self._net(user_var, item_var, neg_item)
                 self._optimizer.zero_grad()
-
                 loss = self._loss_func(positive_prediction, negative_prediction)
                 '''
                 epoch_loss += loss.data[0]
-
                 loss.backward()
                 self._optimizer.step()
 
@@ -337,5 +337,27 @@ class ImplicitFactorizationModel(object):
 
         return cpu(out.data).numpy().flatten()
 
-    def _rankDataPrep(self, user, pos_itm, neg_itm):
+    def _rankDataPrepSwapping(self, user, pos_itm, neg_itm):
 
+        x = torch.stack((user, pos_itm, neg_itm))
+        x = torch.t(x)
+        x = x.data
+        x = x.squeeze()
+        y = torch.Tensor(torch.rand(self._batch_size))
+        y[y > 0.5] = 1
+        y[y <= 0.5] = 0
+        tmp3 = ((y == 0).nonzero())
+        if len(tmp3.size()) > 0:
+            for i in range(tmp3.size()[0]):
+                ind = tmp3[i]
+                perm = torch.LongTensor([0, 2, 1])
+                tmp = x[ind, perm]
+                tmp = tmp.view(1, tmp.size()[0])
+                x[ind] = tmp
+            y = y.view(y.size()[0], 1)
+        return x, Variable(y)
+
+
+    def bceLoss(self, y, target):
+
+        return F.binary_cross_entropy(y, target)

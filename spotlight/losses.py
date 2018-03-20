@@ -243,6 +243,9 @@ def logistic_loss(observed_ratings, predicted_ratings):
                                               observed_ratings,
                                               size_average=True)
 
-def bce(y, target):
-
-    return F.BCELoss(y, target)
+# def bce(y, target):
+#
+#     print "walla"
+#     exit()
+#
+#     return F.binary_cross_entropy(y, target)

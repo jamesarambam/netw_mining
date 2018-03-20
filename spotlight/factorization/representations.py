@@ -4,7 +4,7 @@ factorization models.
 """
 
 import torch.nn as nn
-
+from torch.autograd import Variable
 from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 import torch
 
@@ -143,7 +143,7 @@ class RankingNet(nn.Module):
 
         self.output = nn.Sigmoid()
 
-    def forward(self, user_ids, pos_item_ids, neg_item_ids):
+    def forward(self, x):
         """
         Compute the forward pass of the representation.
 
@@ -163,25 +163,26 @@ class RankingNet(nn.Module):
         predictions: tensor
             Tensor of predictions.
         """
+        user_ids = Variable(x[:,0])
+        pos_item_ids = Variable(x[:,1])
+        neg_item_ids = Variable(x[:,2])
 
 
         user_embedding = self.user_embeddings(user_ids)
         pos_item_embedding = self.item_embeddings(pos_item_ids)
         neg_item_embedding = self.item_embeddings(neg_item_ids)
 
-
         user_embedding = user_embedding.squeeze()
         pos_item_embedding = pos_item_embedding.squeeze()
         neg_item_embedding = neg_item_embedding.squeeze()
 
-         #print user_embedding.size()
 
         x = torch.cat((user_embedding, pos_item_embedding, neg_item_embedding), 1)
+
 
         h_relu = self.linear1(x).clamp(min=0)
         score = self.linear2(h_relu)
         prob = self.output(score)
-
         return prob
 
 
