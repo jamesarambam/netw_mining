@@ -79,7 +79,7 @@ class ImplicitFactorizationModel(object):
                  loss='pointwise',
                  embedding_dim=32,
                  n_iter=10,
-                 batch_size=256,
+                 batch_size=265,
                  l2=0.0,
                  learning_rate=1e-2,
                  optimizer_func=None,
@@ -93,6 +93,7 @@ class ImplicitFactorizationModel(object):
                         'bpr',
                         'hinge',
                         'adaptive_hinge')
+
 
         self._loss = loss
         self._embedding_dim = embedding_dim
@@ -203,6 +204,9 @@ class ImplicitFactorizationModel(object):
 
         user_ids = interactions.user_ids.astype(np.int64)
         item_ids = interactions.item_ids.astype(np.int64)
+
+        user_ids = user_ids[0:100]
+        item_ids = item_ids[0:100]
 
         if not self._initialized:
             self._initialize(interactions)

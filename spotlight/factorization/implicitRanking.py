@@ -24,7 +24,7 @@ from spotlight.sampling import sample_items
 from spotlight.torch_utils import cpu, gpu, minibatch, set_seed, shuffle
 
 
-class ImplicitFactorizationModel(object):
+class RankingModel(object):
     """
     An implicit feedback matrix factorization model. Uses a classic
     matrix factorization [1]_ approach, with latent vectors used
@@ -82,7 +82,7 @@ class ImplicitFactorizationModel(object):
                  loss='bce',
                  embedding_dim=32,
                  n_iter=10,
-                 batch_size=5,
+                 batch_size=256,
                  l2=0.0,
                  learning_rate=1e-2,
                  optimizer_func=None,
@@ -208,6 +208,11 @@ class ImplicitFactorizationModel(object):
         user_ids = interactions.user_ids.astype(np.int64)
         item_ids = interactions.item_ids.astype(np.int64)
 
+
+        user_ids = user_ids[0:100]
+        item_ids = item_ids[0:100]
+
+
         if not self._initialized:
             self._initialize(interactions)
 
@@ -237,6 +242,7 @@ class ImplicitFactorizationModel(object):
                 neg_item = self._get_negative_items(user_var)
 
                 x, target = self._rankDataPrepSwapping(user_var, pos_item, neg_item)
+
                 pred_prob = self._net(x)
                 self._optimizer.zero_grad()
                 loss = self.bceLoss(pred_prob, target)
@@ -300,6 +306,7 @@ class ImplicitFactorizationModel(object):
         return negative_prediction.view(n, len(user_ids))
 
     def predict(self, user_ids, item_ids=None):
+
         """
         Make predictions: given a user id, compute the recommendation
         scores for items.
@@ -327,8 +334,40 @@ class ImplicitFactorizationModel(object):
         a[a <= 0.5] = 0
         """
 
+
         self._check_input(user_ids, item_ids, allow_items_none=True)
         self._net.train(False)
+
+        totUsers = user_ids.shape[0]
+        totItems = item_ids.shape[0]
+        tmpItemsPair = torch.zeros(totUsers * totItems * totItems, 3).type(torch.LongTensor)
+        tmpItemsPair = tmpItemsPair.fill_(-1)
+        count = 0
+        for uid in range(user_ids.shape[0]):
+            u = user_ids[uid]
+            for ii1 in range(item_ids.shape[0]):
+                i1 = item_ids[ii1]
+                for ii2 in range(ii1+1, item_ids.shape[0]):
+                    i2 = item_ids[ii2]
+                    print u, i1, i2
+                    tmp2 = torch.LongTensor([u, i1, i2])
+                    print tmp2
+                    # tmp2 = tmp2.view(1, 3)
+                    tmp2 = torch.unsqueeze(tmp2, 0)
+                    out = self._net(tmp2)
+                    print out
+                    exit()
+
+                    print tmp2
+                    exit()
+                    tmpItemsPair[count] = tmp2
+                    count += 1
+        x = tmpItemsPair[0:count]
+        print x
+        exit()
+        out = self._net(x)
+        print out
+        exit()
 
         user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
                                                   self._num_items,

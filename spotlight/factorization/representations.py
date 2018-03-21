@@ -164,21 +164,19 @@ class RankingNet(nn.Module):
             Tensor of predictions.
         """
         user_ids = Variable(x[:,0])
-        pos_item_ids = Variable(x[:,1])
-        neg_item_ids = Variable(x[:,2])
+        i1 = Variable(x[:,1])
+        i2 = Variable(x[:,2])
 
 
         user_embedding = self.user_embeddings(user_ids)
-        pos_item_embedding = self.item_embeddings(pos_item_ids)
-        neg_item_embedding = self.item_embeddings(neg_item_ids)
+        item1_embedding = self.item_embeddings(i1)
+        item2_embedding = self.item_embeddings(i2)
 
         user_embedding = user_embedding.squeeze()
-        pos_item_embedding = pos_item_embedding.squeeze()
-        neg_item_embedding = neg_item_embedding.squeeze()
+        item1_embedding = item1_embedding.squeeze()
+        item2_embedding = item2_embedding.squeeze()
 
-
-        x = torch.cat((user_embedding, pos_item_embedding, neg_item_embedding), 1)
-
+        x = torch.cat((user_embedding, item1_embedding, item2_embedding), 1)
 
         h_relu = self.linear1(x).clamp(min=0)
         score = self.linear2(h_relu)
