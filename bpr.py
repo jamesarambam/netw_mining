@@ -1,6 +1,6 @@
 from spotlight.cross_validation import random_train_test_split
 from spotlight.datasets.movielens import get_movielens_dataset
-from spotlight.evaluation import mrr_score
+from spotlight.evaluation import mrr_score, rmse_score
 from spotlight.factorization.implicit import ImplicitFactorizationModel
 import numpy as np
 
@@ -19,10 +19,10 @@ item_ids = test.item_ids.astype(np.int64)
 
 model = ImplicitFactorizationModel(n_iter=1, loss='bpr', batch_size=2)
 model.fit(train)
-print "train comp"
+
 # mrr = mrr_score(model, test)
+rmse = rmse_score(model, test)
 # print mrr
 
-print model.predict(1, item_ids)
 
 # print model.predict(user_ids, item_ids)

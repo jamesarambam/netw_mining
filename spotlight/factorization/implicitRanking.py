@@ -335,44 +335,68 @@ class RankingModel(object):
         """
 
 
+        totTestIds = user_ids.shape[0]
+
+
         self._check_input(user_ids, item_ids, allow_items_none=True)
         self._net.train(False)
 
+        user_ids = np.unique(user_ids)
+        item_ids = np.unique(item_ids)
         totUsers = user_ids.shape[0]
         totItems = item_ids.shape[0]
+
+        # print "waala"
+        # import pdb
+        # pdb.set_trace()
+
         tmpItemsPair = torch.zeros(totUsers * totItems * totItems, 3).type(torch.LongTensor)
         tmpItemsPair = tmpItemsPair.fill_(-1)
         count = 0
-        for uid in range(user_ids.shape[0]):
+        for uid in range(totUsers):
             u = user_ids[uid]
-            for ii1 in range(item_ids.shape[0]):
+            for ii1 in range(totItems):
                 i1 = item_ids[ii1]
-                for ii2 in range(ii1+1, item_ids.shape[0]):
+                for ii2 in range(totItems):
                     i2 = item_ids[ii2]
-                    print u, i1, i2
-                    tmp2 = torch.LongTensor([u, i1, i2])
-                    print tmp2
-                    # tmp2 = tmp2.view(1, 3)
-                    tmp2 = torch.unsqueeze(tmp2, 0)
-                    out = self._net(tmp2)
-                    print out
-                    exit()
-
-                    print tmp2
-                    exit()
-                    tmpItemsPair[count] = tmp2
-                    count += 1
+                    if i1 <> i2:
+                        tmp2 = torch.LongTensor([u, i1, i2])
+                        tmpItemsPair[count] = tmp2
+                        count += 1
         x = tmpItemsPair[0:count]
-        print x
-        exit()
-        out = self._net(x)
-        print out
+        y = self._net(x)
+        print x, y
+        print "-------"
+        print "count",count
+
+
+
+        tmpCount = 0
+        finalTensor = torch.zeros(totUsers, totItems, totItems)
+        for uid in range(totUsers):
+            for ii1 in range(totItems):
+                for ii2 in range(totItems):
+                    if ii1 <> ii2:
+                        finalTensor[uid][ii1][ii2] = y[tmpCount].data[0]
+                        tmpCount += 1
+        recoScore = (finalTensor.sum(dim=1) + finalTensor.sum(dim=2))/totItems
+
+        print recoScore
+        pred = []
+        for i in range(totTestIds):
+            pred.append(recoScore[user_ids[i]][item_ids[i]])
+
+
+        print len(pred)
         exit()
 
-        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
-                                                  self._num_items,
-                                                  self._use_cuda)
-        out = self._net(user_ids, item_ids)
+
+
+
+        # user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
+        #                                           self._num_items,
+        #                                           self._use_cuda)
+        # out = self._net(user_ids, item_ids)
 
         return cpu(out.data).numpy().flatten()
 

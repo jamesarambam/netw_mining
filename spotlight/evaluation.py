@@ -199,5 +199,6 @@ def rmse_score(model, test):
     """
 
     predictions = model.predict(test.user_ids, test.item_ids)
-
+    import pdb
+    pdb.set_trace()
     return np.sqrt(((test.ratings - predictions) ** 2).mean())

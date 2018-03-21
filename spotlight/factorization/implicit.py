@@ -315,6 +315,6 @@ class ImplicitFactorizationModel(object):
                                                   self._num_items,
                                                   self._use_cuda)
 
-        out = self._net(user_ids, item_ids)
 
+        out = self._net(user_ids, item_ids)
         return cpu(out.data).numpy().flatten()
