@@ -4,7 +4,6 @@ from spotlight.evaluation import mrr_score
 # from spotlight.factorization.implicit import ImplicitFactorizationModel
 from spotlight.factorization.implicitRanking import RankingModel
 import numpy as np
-
 # --------------------------------------------------------------------- #
 
 dataset = get_movielens_dataset(variant='100K')
@@ -23,4 +22,3 @@ print "train"
 exit()
 
 mrr = mrr_score(model, test)
-

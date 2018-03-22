@@ -23,6 +23,8 @@ from representations import *
 from spotlight.sampling import sample_items
 from spotlight.torch_utils import cpu, gpu, minibatch, set_seed, shuffle
 
+import pdb_trace as dbg
+
 
 class RankingModel(object):
     """
@@ -305,6 +307,7 @@ class RankingModel(object):
 
         return negative_prediction.view(n, len(user_ids))
 
+
     def predict(self, user_ids, item_ids=None):
 
         """
@@ -346,48 +349,51 @@ class RankingModel(object):
         totUsers = user_ids.shape[0]
         totItems = item_ids.shape[0]
 
+        print totUsers
+        exit()
+
         # print "waala"
         # import pdb
         # pdb.set_trace()
 
-        tmpItemsPair = torch.zeros(totUsers * totItems * totItems, 3).type(torch.LongTensor)
-        tmpItemsPair = tmpItemsPair.fill_(-1)
-        count = 0
-        for uid in range(totUsers):
-            u = user_ids[uid]
-            for ii1 in range(totItems):
-                i1 = item_ids[ii1]
-                for ii2 in range(totItems):
-                    i2 = item_ids[ii2]
-                    if i1 <> i2:
-                        tmp2 = torch.LongTensor([u, i1, i2])
-                        tmpItemsPair[count] = tmp2
-                        count += 1
-        x = tmpItemsPair[0:count]
-        y = self._net(x)
-        print x, y
-        print "-------"
-        print "count",count
+        # tmpItemsPair = torch.zeros(totUsers * totItems * totItems, 3).type(torch.LongTensor)
+        # tmpItemsPair = tmpItemsPair.fill_(-1)
+        # count = 0
+        # for uid in range(totUsers):
+        #     u = user_ids[uid]
+        #     for ii1 in range(totItems):
+        #         i1 = item_ids[ii1]
+        #         for ii2 in range(totItems):
+        #             i2 = item_ids[ii2]
+        #             if i1 <> i2:
+        #                 tmp2 = torch.LongTensor([u, i1, i2])
+        #                 tmpItemsPair[count] = tmp2
+        #                 count += 1
+        # x = tmpItemsPair[0:count]
+        # y = self._net(x)
+        # print x, y
+        # print "-------"
+        # print "count",count
 
 
 
-        tmpCount = 0
-        finalTensor = torch.zeros(totUsers, totItems, totItems)
-        for uid in range(totUsers):
-            for ii1 in range(totItems):
-                for ii2 in range(totItems):
-                    if ii1 <> ii2:
-                        finalTensor[uid][ii1][ii2] = y[tmpCount].data[0]
-                        tmpCount += 1
-        recoScore = (finalTensor.sum(dim=1) + finalTensor.sum(dim=2))/totItems
-
-        print recoScore
-        pred = []
-        for i in range(totTestIds):
-            pred.append(recoScore[user_ids[i]][item_ids[i]])
-
-
-        print len(pred)
+        # tmpCount = 0
+        # finalTensor = torch.zeros(totUsers, totItems, totItems)
+        # for uid in range(totUsers):
+        #     for ii1 in range(totItems):
+        #         for ii2 in range(totItems):
+        #             if ii1 <> ii2:
+        #                 finalTensor[uid][ii1][ii2] = y[tmpCount].data[0]
+        #                 tmpCount += 1
+        # recoScore = (finalTensor.sum(dim=1) + finalTensor.sum(dim=2))/totItems
+        #
+        # print recoScore
+        # pred = []
+        # for i in range(totTestIds):
+        #     pred.append(recoScore[user_ids[i]][item_ids[i]])
+        #
+        #
+        # print len(pred)
         exit()
 
 
