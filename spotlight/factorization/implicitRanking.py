@@ -344,108 +344,25 @@ class RankingModel(object):
         totQuery = user_ids.shape[0]
         uniqItems = np.unique(item_ids)
         totUniqItems = uniqItems.shape[0]
+        k = 10
 
-        totTestIds = user_ids.shape[0]
-
-        k = 100
-
-
+        pred = []
         self._check_input(user_ids, item_ids, allow_items_none=True)
         self._net.train(False)
 
         for qID in range(totQuery):
-            u = user_ids[qID]
-            i1 = item_ids[qID]
+            u = int(user_ids[qID])
+            i1 = int(item_ids[qID])
             items2 = np.unique(np.random.randint(0, totUniqItems, size=k))
-
             t1 = torch.LongTensor([u, i1])
             t1 = t1.repeat(items2.shape[0], 1)
             t2 = torch.LongTensor([items2])
             t2 = torch.transpose(t2, 0, 1)
             t3 = torch.cat((t1, t2), 1)
             y = self._net(t3)
-            # xTmp = torch.LongTensor([u, ])
+            pred.append(y.mean().data[0])
 
-
-
-
-            pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
-            pdb.set_trace()
-
-
-
-
-
-        k = 10
-
-        # tmpU = torch.zeros(totItems*k, 2)
-        # for uid in range(totUsers):
-        #     u = user_ids[uid]
-        #     for ii1 in range(totItems):
-        #         i1 = item_ids[ii1]
-        #         print u, i1
-        #         exit()
-
-
-
-        pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
-        pdb.set_trace()
-
-
-
-        tmpItemsPair = torch.zeros(totUsers * totItems * k, 3).type(torch.LongTensor)
-        tmpItemsPair = tmpItemsPair.fill_(-1)
-        count = 0
-
-
-        exit()
-
-        for uid in range(totUsers):
-            u = user_ids[uid]
-            for ii1 in range(totItems):
-                i1 = item_ids[ii1]
-                for ii2 in range(totItems):
-                    i2 = item_ids[ii2]
-                    if i1 <> i2:
-                        tmp2 = torch.LongTensor([u, i1, i2])
-                        tmpItemsPair[count] = tmp2
-                        count += 1
-        x = tmpItemsPair[0:count]
-        y = self._net(x)
-        print x, y
-        print "-------"
-        print "count",count
-
-
-
-        # tmpCount = 0
-        # finalTensor = torch.zeros(totUsers, totItems, totItems)
-        # for uid in range(totUsers):
-        #     for ii1 in range(totItems):
-        #         for ii2 in range(totItems):
-        #             if ii1 <> ii2:
-        #                 finalTensor[uid][ii1][ii2] = y[tmpCount].data[0]
-        #                 tmpCount += 1
-        # recoScore = (finalTensor.sum(dim=1) + finalTensor.sum(dim=2))/totItems
-        #
-        # print recoScore
-        # pred = []
-        # for i in range(totTestIds):
-        #     pred.append(recoScore[user_ids[i]][item_ids[i]])
-        #
-        #
-        # print len(pred)
-        exit()
-
-
-
-
-        # user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
-        #                                           self._num_items,
-        #                                           self._use_cuda)
-        # out = self._net(user_ids, item_ids)
-
-        return cpu(out.data).numpy().flatten()
+        return pred
 
     def _rankDataPrepSwapping(self, user, pos_itm, neg_itm):
 
@@ -466,7 +383,6 @@ class RankingModel(object):
                 x[ind] = tmp
             y = y.view(y.size()[0], 1)
         return x, Variable(y)
-
 
     def bceLoss(self, y, target):
 
