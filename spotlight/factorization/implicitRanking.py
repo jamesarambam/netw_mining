@@ -394,6 +394,7 @@ class RankingModel(object):
 
         return np.array(pred)
 
+<<<<<<< HEAD
 
     def predict_mrr(self, user_ids, item_ids=None):
 
@@ -434,6 +435,8 @@ class RankingModel(object):
         return np.array(pred)
 
 
+=======
+>>>>>>> ceef84d542ff6b80f4aa060d1c7d2ca79a4d94e4
 
     def _rankDataPrepSwapping(self, user, pos_itm, neg_itm):
 
