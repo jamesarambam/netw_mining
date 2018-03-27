@@ -8,6 +8,8 @@ from torch.autograd import Variable
 from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 import torch
 
+import pdb
+import rlcompleter
 
 class BilinearNet(nn.Module):
     """
@@ -118,8 +120,15 @@ class RankingNet(nn.Module):
 
         self.embedding_dim = embedding_dim
 
-        self.inputDim = embedding_dim * 3
-        self.hiddenDim = self.inputDim * 2
+
+        # self.inputDim = embedding_dim * 3
+        # self.hiddenDim = self.inputDim * 2
+        # self.hiddenDim2 = embedding_dim * 3
+        # self.l2Output = 1
+
+        self.inputDim = embedding_dim * 2
+        self.hiddenDim = self.inputDim * 1
+        self.hiddenDim2 = embedding_dim * 2
         self.l2Output = 1
 
 
@@ -138,10 +147,20 @@ class RankingNet(nn.Module):
         self.user_biases = ZeroEmbedding(num_users, 1, sparse=sparse)
         self.item_biases = ZeroEmbedding(num_items, 1, sparse=sparse)
 
-        self.linear1 = nn.Linear(self.inputDim, self.hiddenDim)
-        self.linear2 = nn.Linear(self.hiddenDim, self.l2Output)
+        # self.linear1 = nn.Linear(self.inputDim, self.hiddenDim)
+        # self.bn1 = nn.BatchNorm1d(self.hiddenDim)
+        # self.linear2 = nn.Linear(self.hiddenDim, self.l2Output)
+        # self.dropout = nn.Dropout(p = 0.8)
+        # self.output = nn.Sigmoid()
 
+        self.linear1 = nn.Linear(self.inputDim, self.hiddenDim)
+        self.bn1 = nn.BatchNorm1d(self.hiddenDim)
+        self.linear2 = nn.Linear(self.hiddenDim, self.hiddenDim2)
+        self.bn2 = nn.BatchNorm1d(self.hiddenDim2)
+        self.linear3 = nn.Linear(self.hiddenDim2, self.l2Output)
+        self.dropout = nn.Dropout(p = 0.8)
         self.output = nn.Sigmoid()
+
 
     def forward(self, x):
         """
@@ -167,7 +186,6 @@ class RankingNet(nn.Module):
         i1 = Variable(x[:,1])
         i2 = Variable(x[:,2])
 
-
         user_embedding = self.user_embeddings(user_ids)
         item1_embedding = self.item_embeddings(i1)
         item2_embedding = self.item_embeddings(i2)
@@ -176,11 +194,38 @@ class RankingNet(nn.Module):
         item1_embedding = item1_embedding.squeeze()
         item2_embedding = item2_embedding.squeeze()
 
-        x = torch.cat((user_embedding, item1_embedding, item2_embedding), 1)
+        # x = torch.cat((user_embedding, item1_embedding, item2_embedding), 1)
 
-        h_relu = self.linear1(x).clamp(min=0)
-        score = self.linear2(h_relu)
+        # pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+        # pdb.set_trace()
+
+        x1 = user_embedding * item1_embedding
+        x2 = user_embedding * item2_embedding
+        x = torch.cat([x1, x2], 1)
+
+        # 3 Layer
+        # h_relu = self.linear1(x).clamp(min=0)
+        # h_relu2 = self.linear2(h_relu).clamp(min=0)
+        # h_relu3 = self.linear3(h_relu2).clamp(min=0)
+        # drop = self.dropout(h_relu3)
+        # score = self.linear4(drop)
+        # prob = self.output(score)
+
+        # 2 Layer
+        # h_relu = self.linear1(x).clamp(min=0)
+        # h_relu_bn = self.bn1(h_relu)
+        # drop = self.dropout(h_relu_bn)
+        # score = self.linear2(drop)
+        # prob = self.output(score)
+
+        h_relu1 = self.linear1(x).clamp(min=0)
+        h_relu_bn1 = self.bn1(h_relu1)
+        h_relu2 = self.linear2(h_relu_bn1).clamp(min=0)
+        h_relu_bn2 = self.bn2(h_relu2)
+        drop = self.dropout(h_relu_bn2)
+        score = self.linear3(drop)
         prob = self.output(score)
+
         return prob
 
 

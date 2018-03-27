@@ -43,7 +43,6 @@ def mrr_score(model, test, train=None):
 
         if not len(row.indices):
             continue
-
         predictions = -model.predict(user_id)
 
         if train is not None:
@@ -51,9 +50,12 @@ def mrr_score(model, test, train=None):
 
         mrr = (1.0 / st.rankdata(predictions)[row.indices]).mean()
 
+        print user_id, mrr
+
         mrrs.append(mrr)
 
     return np.array(mrrs)
+
 
 
 def sequence_mrr_score(model, test, exclude_preceding=False):
@@ -199,6 +201,4 @@ def rmse_score(model, test):
     """
 
     predictions = model.predict(test.user_ids, test.item_ids)
-    import pdb
-    pdb.set_trace()
     return np.sqrt(((test.ratings - predictions) ** 2).mean())
