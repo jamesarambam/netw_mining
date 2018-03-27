@@ -29,6 +29,8 @@ import rlcompleter
 import os
 
 def cls(): os.system('clear')
+pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+
 
 class RankingModel(object):
     """
@@ -96,7 +98,8 @@ class RankingModel(object):
                  representation=None,
                  sparse=False,
                  random_state=None,
-                 num_negative_samples=5):
+                 num_negative_samples=5,
+                 k_sample=-1):
 
         assert loss in ('pointwise',
                         'bpr',
@@ -121,6 +124,9 @@ class RankingModel(object):
         self._net = None
         self._optimizer = None
         self._loss_func = None
+        self.k_sample = k_sample
+
+
 
         set_seed(self._random_state.randint(-10**8, 10**8),
                  cuda=self._use_cuda)
@@ -247,7 +253,12 @@ class RankingModel(object):
                 pos_item = Variable(batch_item)
                 neg_item = self._get_negative_items(user_var)
 
+
+
+
                 x, target = self._rankDataPrepSwapping(user_var, pos_item, neg_item)
+
+
 
                 pred_prob = self._net(x)
                 self._optimizer.zero_grad()
@@ -311,7 +322,6 @@ class RankingModel(object):
 
         return negative_prediction.view(n, len(user_ids))
 
-
     def predict(self, user_ids, item_ids=None):
 
         """
@@ -341,19 +351,39 @@ class RankingModel(object):
         a[a <= 0.5] = 0
         """
 
-        totQuery = user_ids.shape[0]
-        uniqItems = np.unique(item_ids)
-        totUniqItems = uniqItems.shape[0]
-        k = 10
-
-        pred = []
         self._check_input(user_ids, item_ids, allow_items_none=True)
         self._net.train(False)
+
+        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
+                                                  self._num_items,
+                                                  self._use_cuda)
+
+        totQuery = int(user_ids.size()[0])
+        # pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+        # pdb.set_trace()
+
+        uniqItems = np.unique(item_ids.data.numpy())
+        totUniqItems = uniqItems.shape[0]
+
+        pred = []
+
+
+
+        user_ids = user_ids.data.numpy()
+        item_ids = item_ids.data.numpy()
+
+        # pdb.Pdb.complete =rlcompleter.Completer(locals()).complete
+        # pdb.set_trace()
 
         for qID in range(totQuery):
             u = int(user_ids[qID])
             i1 = int(item_ids[qID])
-            items2 = np.unique(np.random.randint(0, totUniqItems, size=k))
+
+
+            # pdb.Pdb.complete =rlcompleter.Completer(locals()).complete
+            # pdb.set_trace()
+
+            items2 = np.unique(np.random.randint(0, totUniqItems, size=self.k_sample))
             t1 = torch.LongTensor([u, i1])
             t1 = t1.repeat(items2.shape[0], 1)
             t2 = torch.LongTensor([items2])
@@ -362,15 +392,19 @@ class RankingModel(object):
             y = self._net(t3)
             pred.append(y.mean().data[0])
 
-        return pred
+        return np.array(pred)
+
 
     def _rankDataPrepSwapping(self, user, pos_itm, neg_itm):
 
         x = torch.stack((user, pos_itm, neg_itm))
+
         x = torch.t(x)
         x = x.data
         x = x.squeeze()
-        y = torch.Tensor(torch.rand(self._batch_size))
+        # y = torch.Tensor(torch.rand(self._batch_size))
+        y = torch.Tensor(torch.rand(x.size()[0]))
+
         y[y > 0.5] = 1
         y[y <= 0.5] = 0
         tmp3 = ((y == 0).nonzero())
