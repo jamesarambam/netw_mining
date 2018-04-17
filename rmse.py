@@ -8,16 +8,23 @@ from spotlight.evaluation import rmse_score, mrr_score
 # from spotlight.factorization.implicit import ImplicitFactorizationModel
 from spotlight.factorization.implicitRanking import RankingModel
 from auxLib import createDir
-
-n_u = 200
-n_i = 5000
-sparsity = [0.05, 0.1, 0.15, 0.2, 0.25, 0.5]
-n_interactions = [int(n_u*n_i*s) for s in sparsity]
-rs = np.random.RandomState(500)
-
+import pdb
 
 k_sample = [10, 20, 50, 100, 200]
 sample = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+dataset = get_movielens_dataset(variant='100K')
+rs = np.random.RandomState(100)
+train, test = random_train_test_split(dataset, random_state=rs)
+
+
 for k in k_sample:
+	dirName = "100kMovie" + "_k" + str(k)
+	createDir("./log/rmse/real/", dirName)
 	for i in sample:
-		os.system("python ranking_rmse.py "+str(k)+" > rmse/log"+str(i)+"_"+str(k)+".txt")
+		model = RankingModel(n_iter=10, batch_size=128, learning_rate=1e-4, k_sample=k, inputSample=train.ratings.shape[0])
+		model.fit(train)
+		rmse = rmse_score(model, test)
+		with open("./log/rmse/real/" + dirName + "/" + str(i) + ".txt", 'w') as f:
+			f.writelines(str(rmse))
+
