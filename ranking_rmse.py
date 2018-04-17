@@ -1,7 +1,6 @@
 from spotlight.cross_validation import random_train_test_split
 from spotlight.datasets.movielens import get_movielens_dataset
 from spotlight.evaluation import rmse_score, mrr_score
-# from spotlight.factorization.implicit import ImplicitFactorizationModel
 from spotlight.factorization.implicitRanking import RankingModel
 import numpy as np
 import pdb
@@ -12,9 +11,6 @@ import pdb
 import rlcompleter
 import sys
 
-import pdb
-import rlcompleter
-import sys
 # --------------------------------------------------------------------- #
 
 
