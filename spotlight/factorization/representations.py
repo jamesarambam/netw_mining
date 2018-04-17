@@ -8,6 +8,8 @@ from torch.autograd import Variable
 from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 import torch
 
+import pdb
+import rlcompleter
 
 class BilinearNet(nn.Module):
     """
@@ -118,9 +120,21 @@ class RankingNet(nn.Module):
 
         self.embedding_dim = embedding_dim
 
+<<<<<<< HEAD
+
+        # self.inputDim = embedding_dim * 3
+        # self.hiddenDim = self.inputDim * 2
+        # self.hiddenDim2 = embedding_dim * 3
+        # self.l2Output = 1
+
+        self.inputDim = embedding_dim * 2
+        self.hiddenDim = self.inputDim * 1
+        self.hiddenDim2 = embedding_dim * 2
+=======
         self.inputDim = embedding_dim * 3
         self.hiddenDim = self.inputDim * 2
         self.hiddenDim2 = embedding_dim * 3
+>>>>>>> ceef84d542ff6b80f4aa060d1c7d2ca79a4d94e4
         self.l2Output = 1
 
 
@@ -186,7 +200,18 @@ class RankingNet(nn.Module):
         item1_embedding = item1_embedding.squeeze()
         item2_embedding = item2_embedding.squeeze()
 
+<<<<<<< HEAD
+        # x = torch.cat((user_embedding, item1_embedding, item2_embedding), 1)
+
+        # pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+        # pdb.set_trace()
+
+        x1 = user_embedding * item1_embedding
+        x2 = user_embedding * item2_embedding
+        x = torch.cat([x1, x2], 1)
+=======
         x = torch.cat((user_embedding, item1_embedding, item2_embedding), 1)
+>>>>>>> ceef84d542ff6b80f4aa060d1c7d2ca79a4d94e4
 
         # 3 Layer
         # h_relu = self.linear1(x).clamp(min=0)

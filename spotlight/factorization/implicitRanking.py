@@ -394,6 +394,49 @@ class RankingModel(object):
 
         return np.array(pred)
 
+<<<<<<< HEAD
+
+    def predict_mrr(self, user_ids, item_ids=None):
+
+        # self._check_input(user_ids, item_ids, allow_items_none=True)
+        # self._net.train(False)
+
+        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
+                                                  self._num_items,
+                                                  self._use_cuda)
+
+
+
+        user_ids = user_ids[0].data.numpy()
+
+        # pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+        # pdb.set_trace()
+
+
+        totQuery = int(item_ids.size()[0])
+
+        uniqItems = np.unique(item_ids.data.numpy())
+        totUniqItems = uniqItems.shape[0]
+
+        pred = []
+
+        for qID in range(totQuery):
+            u = int(user_ids[0])
+            i1 = int(item_ids[qID])
+            items2 = np.unique(np.random.randint(0, totUniqItems, size=self.k_sample))
+            t1 = torch.LongTensor([u, i1])
+            t1 = t1.repeat(items2.shape[0], 1)
+            t2 = torch.LongTensor([items2])
+            t2 = torch.transpose(t2, 0, 1)
+            t3 = torch.cat((t1, t2), 1)
+            y = self._net(t3)
+            pred.append(y.mean().data[0])
+
+        return np.array(pred)
+
+
+=======
+>>>>>>> ceef84d542ff6b80f4aa060d1c7d2ca79a4d94e4
 
     def _rankDataPrepSwapping(self, user, pos_itm, neg_itm):
 
