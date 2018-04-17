@@ -1,90 +1,35 @@
-"""
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Author : James Arambam
-Date   : 05 Mar 2018
-Description :
-Input : 
-Output : 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-"""
-print "# ============================ START ============================ #"
-# ================================ Imports ================================ #
-import sys
-import os
-from pprint import pprint
-import time
-
-
-import torch
-from torch.autograd import Variable
-from parameters import INPUT_DIM, OUTPUT_DIM, HIDDEN_DIM, LEARNING_RATE, TOTAL_USERS, TOTAL_ITEMS, USER_EMB_DIM, ITEM_EMB_DIM, SEED
+from spotlight.datasets.synthetic import generate_sequential
 import numpy as np
-
-# =============================== Variables ================================== #
-
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-
-# ============================================================================ #
-
-class syntheticData:
-
-    def __init__(self):
-        self.userEmbMat = np.random.rand(USER_EMB_DIM, TOTAL_USERS)
-        self.itemEmbMat = np.random.rand(ITEM_EMB_DIM, TOTAL_ITEMS)
-        self.trainData, self.testData = self.prepData()
-
-    def prepData(self):
-
-        self.binaryHash = {(0, 0):0, (0, 1):1, (1, 0):2, (1, 1):3}
-        self.RatingMat = np.random.randint(0, 2, size=(TOTAL_USERS, TOTAL_ITEMS))
-        tmpTrain = []
-        tmpTest = []
-        for u in range(TOTAL_USERS):
-            for i1 in range(TOTAL_ITEMS):
-                for i2 in range(i1+1, TOTAL_ITEMS):
-                    tmp2 = []
-                    tmp2.append(list(self.userEmbMat[:,u]))
-                    tmp2.append(list(self.itemEmbMat[:,i1]))
-                    tmp2.append(list(self.itemEmbMat[:,i2]))
-
-                    cls = (self.RatingMat[u][i1], self.RatingMat[u][i2])
-                    tmp2.append(self.binaryHash[cls])
-                    if self.binaryHash[cls] == 0:
-                        tmpTest.append(tmp2)
-                    else:
-                        tmpTrain.append(tmp2)
-                    tmp3  = np.array(tmp2)
-                    print tmp3.shape
-                    print tmp3
-                    exit()
+from spotlight.cross_validation import random_train_test_split
+from spotlight.datasets.movielens import get_movielens_dataset
+from spotlight.evaluation import rmse_score, mrr_score
+# from spotlight.factorization.implicit import ImplicitFactorizationModel
+from spotlight.factorization.implicitRanking import RankingModel
+from auxLib import createDir
 
 
-        for x in tmpTrain:
-            print x
-            print self.userEmbMat[:,x[0]]
+def make_synthetic(sparsity = 0.05):
+    n_u = 600
+    n_i = 3000
+    n = int(n_u * n_i * sparsity)
+    rs = np.random.RandomState(100)
+    test_split = float(20000.0 / n)
+    dataset = generate_sequential(num_users=n_u, num_items=n_i, num_interactions=n, concentration_parameter=0.4, order = 3, random_state = rs)
+    return test_split, dataset
 
-            exit()
+sparsity = [0.05, 0.1, 0.15, 0.2, 0.25, 0.5]
+sample = [1, 2, 3, 4, 5]
 
-
-
-        exit()
-
-
-        print tmpTrain[0][0]
-        print tmpTrain[0][1]
-        print tmpTrain[0][2]
-        print tmpTrain[0][3]
-        exit()
-
-        return torch.FloatTensor(tmpTrain), torch.FloatTensor(tmpTest)
-
-def main():
-    print "Hello World"
-
-
-# =============================================================================== #
-
-if __name__ == '__main__':
-    main()
-    print "# ============================  END  ============================ #"
+for s in sparsity:
+    k = 100
+    dirName = "s"+str(s)+"_k"+str(k)
+    createDir("./log/rmse/synth/", dirName)
+    for i in sample:
+        rs = np.random.RandomState(100)
+        split, dataset = make_synthetic(s)
+        train, test = random_train_test_split(dataset, random_state=rs, test_percentage=split)
+        model = RankingModel(n_iter=10, batch_size=128, learning_rate=1e-4, k_sample=k, inputSample=train.ratings.shape[0])
+        model.fit(train)
+        rmse = rmse_score(model, test)
+        with open("./log/rmse/synth/"+dirName+"/"+str(i)+".txt", 'w') as f:
+            f.writelines(str(rmse))
