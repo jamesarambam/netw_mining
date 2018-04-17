@@ -99,7 +99,8 @@ class RankingModel(object):
                  sparse=False,
                  random_state=None,
                  num_negative_samples=5,
-                 k_sample=-1):
+                 k_sample=-1,
+                 inputSample = -1):
 
         assert loss in ('pointwise',
                         'bpr',
@@ -125,8 +126,17 @@ class RankingModel(object):
         self._optimizer = None
         self._loss_func = None
         self.k_sample = k_sample
+        self.inputSample = inputSample
 
 
+        tmp = []
+        for ii1 in range(self._batch_size):
+            for ii2 in range(ii1+1, self._batch_size):
+                tmp.append((ii1, ii2))
+        self.combPos = torch.zeros((len(tmp), 2))
+        for i in range(len(tmp)):
+            self.combPos[i][0] = tmp[i][0]
+            self.combPos[i][1] = tmp[i][1]
 
         set_seed(self._random_state.randint(-10**8, 10**8),
                  cuda=self._use_cuda)
@@ -219,11 +229,15 @@ class RankingModel(object):
 
         user_ids = interactions.user_ids.astype(np.int64)
         item_ids = interactions.item_ids.astype(np.int64)
+        ratings =  interactions.ratings.astype(np.int64)
 
 
-        user_ids = user_ids[0:100]
-        item_ids = item_ids[0:100]
+        user_ids = user_ids[0:self.inputSample]
+        item_ids = item_ids[0:self.inputSample]
+        ratings = ratings[0:self.inputSample]
 
+        # pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+        # pdb.set_trace()
 
         if not self._initialized:
             self._initialize(interactions)
@@ -241,24 +255,23 @@ class RankingModel(object):
             item_ids_tensor = gpu(torch.from_numpy(items),
                                   self._use_cuda)
 
+            rating_ids_tensor = gpu(torch.from_numpy(ratings),
+                                  self._use_cuda)
+
             epoch_loss = 0.0
 
             for (minibatch_num,
                  (batch_user,
-                  batch_item)) in enumerate(minibatch(user_ids_tensor,
-                                                      item_ids_tensor,
+                  batch_item, batch_rating)) in enumerate(minibatch(user_ids_tensor,
+                                                      item_ids_tensor, rating_ids_tensor,
                                                       batch_size=self._batch_size)):
 
                 user_var = Variable(batch_user)
                 pos_item = Variable(batch_item)
+                rating = Variable(batch_rating)
                 neg_item = self._get_negative_items(user_var)
 
-
-
-
-                x, target = self._rankDataPrepSwapping(user_var, pos_item, neg_item)
-
-
+                x, target = self._rankDataPrepSwapping(user_var, pos_item, rating, neg_item)
 
                 pred_prob = self._net(x)
                 self._optimizer.zero_grad()
@@ -367,8 +380,6 @@ class RankingModel(object):
 
         pred = []
 
-
-
         user_ids = user_ids.data.numpy()
         item_ids = item_ids.data.numpy()
 
@@ -378,11 +389,6 @@ class RankingModel(object):
         for qID in range(totQuery):
             u = int(user_ids[qID])
             i1 = int(item_ids[qID])
-
-
-            # pdb.Pdb.complete =rlcompleter.Completer(locals()).complete
-            # pdb.set_trace()
-
             items2 = np.unique(np.random.randint(0, totUniqItems, size=self.k_sample))
             t1 = torch.LongTensor([u, i1])
             t1 = t1.repeat(items2.shape[0], 1)
@@ -390,64 +396,27 @@ class RankingModel(object):
             t2 = torch.transpose(t2, 0, 1)
             t3 = torch.cat((t1, t2), 1)
             y = self._net(t3)
-            pred.append(y.mean().data[0])
 
-        return np.array(pred)
+            # new change
+            y = y.data
+            y[y > 0.5] = 1.0
+            y[y <= 0.5] = 0.0
+            i1_score = (y.sum()/self.k_sample)*5
+            pred.append(int(i1_score))
+            # old
+            # pred.append(y.mean().data[0])
 
-<<<<<<< HEAD
-
-    def predict_mrr(self, user_ids, item_ids=None):
-
-        # self._check_input(user_ids, item_ids, allow_items_none=True)
-        # self._net.train(False)
-
-        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
-                                                  self._num_items,
-                                                  self._use_cuda)
-
-
-
-        user_ids = user_ids[0].data.numpy()
-
-        # pdb.Pdb.complete = rlcompleter.Completer(locals()).complete
+        # pdb.Pdb.complete =rlcompleter.Completer(locals()).complete
         # pdb.set_trace()
-
-
-        totQuery = int(item_ids.size()[0])
-
-        uniqItems = np.unique(item_ids.data.numpy())
-        totUniqItems = uniqItems.shape[0]
-
-        pred = []
-
-        for qID in range(totQuery):
-            u = int(user_ids[0])
-            i1 = int(item_ids[qID])
-            items2 = np.unique(np.random.randint(0, totUniqItems, size=self.k_sample))
-            t1 = torch.LongTensor([u, i1])
-            t1 = t1.repeat(items2.shape[0], 1)
-            t2 = torch.LongTensor([items2])
-            t2 = torch.transpose(t2, 0, 1)
-            t3 = torch.cat((t1, t2), 1)
-            y = self._net(t3)
-            pred.append(y.mean().data[0])
-
         return np.array(pred)
 
-
-=======
->>>>>>> ceef84d542ff6b80f4aa060d1c7d2ca79a4d94e4
-
-    def _rankDataPrepSwapping(self, user, pos_itm, neg_itm):
+    def _rankDataPrepSwapping(self, user, pos_itm, rating, neg_itm):
 
         x = torch.stack((user, pos_itm, neg_itm))
-
         x = torch.t(x)
         x = x.data
         x = x.squeeze()
-        # y = torch.Tensor(torch.rand(self._batch_size))
         y = torch.Tensor(torch.rand(x.size()[0]))
-
         y[y > 0.5] = 1
         y[y <= 0.5] = 0
         tmp3 = ((y == 0).nonzero())
