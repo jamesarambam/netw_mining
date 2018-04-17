@@ -236,3 +236,30 @@ class RankingNet(nn.Module):
         # dot = (user_embedding * item_embedding).sum(1)
         #
         # return dot + user_bias + item_bias
+
+
+class DeepNet(nn.Module):
+    def __init__(self, num_users, num_items, embedding_dim=32, n_layers = 2, sparse = None):
+        super(DeepNet, self).__init__()
+        self.emb_dim = embedding_dim
+        #self.user_emb = nn.Embedding(num_users, self.emb_dim)
+        #self.item_emb = nn.Embedding(num_items, self.emb_dim)
+        self.user_emb = ScaledEmbedding(num_users, embedding_dim, sparse = sparse)
+        self.item_emb = ScaledEmbedding(num_items, embedding_dim, sparse = sparse)
+        
+        self.mlp = nn.Sequential(nn.Linear(self.emb_dim, 16), nn.ReLU(), nn.Dropout(p=0.8),
+                                nn.Linear(16,32), nn.ReLU(), nn.Dropout(0.8))
+        self.user_biases = ZeroEmbedding(num_users, 1)
+        self.item_biases = ZeroEmbedding(num_items, 1)
+        self.out = nn.ReLU()
+    def forward(self, user_ids, item_ids):
+        user_emb = self.user_emb(user_ids).squeeze()
+        item_emb = self.item_emb(item_ids).squeeze()
+
+        x = user_emb *  item_emb
+        z = self.mlp(x)
+        z = z.sum(1) + x.sum(1)
+        user_bias = self.user_biases(user_ids).squeeze()
+        item_bias = self.item_biases(item_ids).squeeze()
+        out = self.out(z + user_bias + item_bias)
+        return out

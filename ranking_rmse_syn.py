@@ -1,4 +1,4 @@
-from spotlight.datasets.synthetic import generate_sequential
+from synthetic import generate_sequential
 import numpy as np
 from spotlight.cross_validation import random_train_test_split
 from spotlight.datasets.movielens import get_movielens_dataset

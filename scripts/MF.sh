@@ -1,0 +1,14 @@
+echo 'sparsity = 0.05'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.05
+echo 'sparsity = 0.1'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.1
+echo 'sparsity = 0.15'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.15
+echo 'sparsity = 0.2'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.2
+echo 'sparsity = 0.25'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.25
+echo 'sparsity = 0.3'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.3
+echo 'sparsity = 0.5'
+CUDA_VISIBLE_DEVICES=5 python baseline.py --model explicit --loss logistic --net DeepNet --lr 1e-4 --n_epoch 20 --sparsity 0.5

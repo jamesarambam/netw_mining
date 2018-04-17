@@ -9,14 +9,15 @@ import torch
 import torch.optim as optim
 
 from torch.autograd import Variable
-
+import pdb
 from spotlight.helpers import _repr_model
 from spotlight.factorization._components import _predict_process_ids
 from spotlight.losses import (adaptive_hinge_loss,
                               bpr_loss,
                               hinge_loss,
                               pointwise_loss)
-from spotlight.factorization.representations import BilinearNet
+#from spotlight.factorization.representations import BilinearNet
+from representations import *
 from spotlight.sampling import sample_items
 from spotlight.torch_utils import cpu, gpu, minibatch, set_seed, shuffle
 
@@ -79,7 +80,7 @@ class ImplicitFactorizationModel(object):
                  loss='pointwise',
                  embedding_dim=32,
                  n_iter=10,
-                 batch_size=265,
+                 batch_size=256,
                  l2=0.0,
                  learning_rate=1e-2,
                  optimizer_func=None,
@@ -93,7 +94,6 @@ class ImplicitFactorizationModel(object):
                         'bpr',
                         'hinge',
                         'adaptive_hinge')
-
 
         self._loss = loss
         self._embedding_dim = embedding_dim
@@ -130,7 +130,8 @@ class ImplicitFactorizationModel(object):
         (self._num_users,
          self._num_items) = (interactions.num_users,
                              interactions.num_items)
-
+        
+        '''
         if self._representation is not None:
             self._net = gpu(self._representation,
                             self._use_cuda)
@@ -142,6 +143,13 @@ class ImplicitFactorizationModel(object):
                             sparse=self._sparse),
                 self._use_cuda
             )
+        '''
+        if self._representation == 'BilinearNet':
+            self._net = gpu(BilinearNet(self._num_users, self._num_items, self._embedding_dim, sparse = self._sparse),
+                            self._use_cuda)
+        elif self._representation == 'DeepNet':
+            self._net = gpu(DeepNet(self._num_users, self._num_items, self._embedding_dim, sparse = self._sparse),
+                            self._use_cuda)
 
         if self._optimizer_func is None:
             self._optimizer = optim.Adam(
@@ -205,9 +213,6 @@ class ImplicitFactorizationModel(object):
         user_ids = interactions.user_ids.astype(np.int64)
         item_ids = interactions.item_ids.astype(np.int64)
 
-        user_ids = user_ids[0:100]
-        item_ids = item_ids[0:100]
-
         if not self._initialized:
             self._initialize(interactions)
 
@@ -235,13 +240,11 @@ class ImplicitFactorizationModel(object):
                 user_var = Variable(batch_user)
                 item_var = Variable(batch_item)
                 positive_prediction = self._net(user_var, item_var)
-
                 if self._loss == 'adaptive_hinge':
                     negative_prediction = self._get_multiple_negative_predictions(
                         user_var, n=self._num_negative_samples)
                 else:
                     negative_prediction = self._get_negative_prediction(user_var)
-
                 self._optimizer.zero_grad()
 
                 loss = self._loss_func(positive_prediction, negative_prediction)
@@ -314,7 +317,6 @@ class ImplicitFactorizationModel(object):
         user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
                                                   self._num_items,
                                                   self._use_cuda)
-
-
         out = self._net(user_ids, item_ids)
+
         return cpu(out.data).numpy().flatten()
